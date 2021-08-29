@@ -1,17 +1,27 @@
 CC = gcc
 EXECUTABLES = test1 test2 test3 test4
 
+SRC = src
+INCLUDE = include
+BINARY = bin
+
 LIBDIR = 
 LIBS = 
 CFLAGS = -g -Wall
 
-all: $(EXECUTABLES)
+all: $(SRC)/mmalloc.c $(INCLUDE)/mmalloc.h
+	$(CC) $(CFLAGS) -c $(SRC)/mmalloc.c -o mmalloc
+	chmod +x mmalloc
+#all: $(EXECUTABLES)
 
-clean:
+clean: 
+	rm -f core mmalloc
+
+clean_all:
 	rm -f core $(EXECUTABLES) mmalloc
 
 mmalloc.o: mmalloc.c mmalloc.h
-	$(CC) $(CFLAGS) -c mmalloc.c -o mmalloc
+	$(CC) $(CFLAGS) -c $(SRC)/mmalloc.c -o mmalloc
 
 mmalloc_nocompact.o: mmalloc.c mmalloc.h
 	$(CC) $(CFLAGS) -c -DNO_COALESCE -o mmalloc_nocompact.o mmalloc.c
