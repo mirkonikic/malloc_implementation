@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "mmalloc.h"
+#include "../include/mmalloc.h"
 
 int main(int argc, char *argv[])
 {
