@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "../include/mmalloc.h"
 
 //IMPLICIT LIST TYPE : headers keep track if the block is used
@@ -23,9 +22,10 @@
  *		- Za svaki ishod mora da ima return iz petlje
  */
 
-Header *lbp;	//List Base Pointer
-Header *fbp = NULL;	//Free Block Pointer
-Header *pi;	//Pointer to the previous of *i
+static Header base;
+static Header *lbp = &base;	//List Base Pointer
+static Header *fbp = NULL;	//Free Block Pointer
+//Header *pi;	//Pointer to the previous of *i, i moved to Mmalloc method
 //*pi is used to link previous block with next with regards to *i
 //When that happens, fbp pointer is pointing to next block of *i
 
@@ -43,54 +43,95 @@ void InitMmalloc()
 //Mmalloc se koristi za alokaciju kad je poznata lista i ima u sebi blokove
 void *Mmalloc(size_t size)
 {
-	Header *i;
+	Header *i, *pi;
 	uint nsegments;	//Size of headers, since one block is the size of header
 	
 	//Sekvencijalna petlja koja prodje po blokovima i pregleda koji je slobodan blok
 	nsegments = (size+sizeof(Header)-1)/sizeof(Header) + 1;
 	printf("number of segments needed: %d\n", nsegments);
 
-	//PROVERI DAL POSTOJI LISTA
-	//AKO NE, PITAJ ZA MEMADD
-	//	AKO NE USPE RETURN NULL
-	//	ELSE CONTINUE
-	
-	//POSTAVI I NA PI->NEXT_BLCK
-	//I kreni da analiziras blokove
-	//Uporedjujes velicinu
-	//
-	//Sada postoje dva izlaza, ili nadje >= blok i podeli ga ili ga vrati
-	//Ili vrti u krug dok se ne vrati na pocetnu velicinu
-	//Ako se vrati da je i==blp, onda trazi memadd i ako ne uspe return NULL
-	//Ako uspe nastavlja for loop jer sad ima dovoljno memorije
-	for(i = pi->next_blck ; ; pi = i, i = i->next_blck)
+//After every mmalloc ill set fbp to pi, so that a reference to the last block visited is stored
+//On beginning of the next mmalloc call, ill set pi to fbp so that i can continue from there and not start over
+//Than ill check if fbp is == NULL, if it is, than the list is empty
+//If it is not than the for loop starts
+
+	//Ovde inicijalizujes listu
+	//Lista se inicijalizuje kad pokazuje na sebe na pocetku
+	//Pa polako dodas jedan po jedan clan
+	if((pi=fbp)==NULL)
 	{
-		//check the size of block i is pointing to
+		printf("pi je fbp sada\n");
+		//ILI dodaj jos memorije jer na inicijalizaciji fbp ne pokazuje ninasta
+		//Postavi da pokazuje na pocetak liste ili na sebe
+		//Napravi prvi header, Podesi da sledeci od lbp bude lbp
+		//Podesi Velicinu lbp na 0, sto kaze da je free ali ne postoji
+		lbp->s.next_blck=pi=fbp=lbp;	//Set values for base header of the list
+		lbp->s.size=0;	//Set values for base header of the list
 	}
 
-	//Na pocetku treba da vidim dal ima liste uopste, odnosno na sta fbp pokazuje
-	//	ako pokazuje na NULL onda nema liste...
-	//	Potrebno je pozvati memadd onda
-	//Ako memadd fail-uje onda return NULL;
-	//Else zapocceti for petlju		//da bi bila beskonacna
-	//For petlja pocinje sa p=pi->next_blck; ; pi=p, p=p->next_blck)
-	//U petlji se proverava da li je trenutni blok in use ili free
-	//Ako je free uporedi se da li ima dovoljnu velicinu
-	//Ako nema ide u sledeci loop
-	//Za problem sa vrtenjem u krug, mogu da namestim blp break loop pointer
-	//	on se podesi na poziciju pi na pocetku i ako p==blp onda trazi memadd
+//In for loop, there are few possible events:
+//1. found a chunk > than needed
+	//i segment it and send i+1 address
+//2. found a chunk = to what i need
+	//i set the 1 least significant bit, so that it says used
+	//and return i+1 address
+//3. found a chunk < than what i need
+	//continue, thats not what i need chief
 
-	//Kako gledamo da li je blok inuse ili free
-	//Po poslednjem bitu, objasnjeno je u header fajlu to vec
-	//Ali otprilike ovako if(p->size&1 == 0b00000001) //blok is in use
-	
-	return NULL;
+//Also Not found a free chunk for a whole loop is a possibility, but thats not a one cycle option, but a whole loop
+//If that happens i will check if i == fbp, than a whole circle has been made
+			    //this will be infinite loop and exits with returns for each possible outcome
+	//Popravi da prvo proveri dal je inuse ili free pa tek onda size
+	//Olaksam procesoru broj instrukcija
+	for(i = pi->s.next_blck ; ; pi = i, i = i->s.next_blck)
+	{
+		if(i->s.size >= nsegments)
+		{
+			printf("Nasao sam blok velicine >= %d: %d, %s, %p\n", nsegments, i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
+			//Zelim da vidim samo dal radi na pocetku
+			//Ostatak koda se odnosi na dodeljivanje memorije korisniku
+			//Prepravljanje headera
+			//I promene InUse ili Free Bita
+		}
+		else
+		{	
+			printf("Nasao sam blok velicine < %d: %d, %s, %p\n", nsegments, i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
+		}
+		
+		
+		//Na samom pocetku ce ovo biti true jer pi->next_blck pokazuje na sebe
+		//Jer jos ne postoji lista heap alociranih blokova
+		if(i==fbp)
+		{
+			//Ceo Loop je prosao
+			printf("Presao sam ceo loop, nisam nasao odg blok..\n");
+			//Trazim od kernela 5*zeljeni blok da ne bih pri svakom malloc pozivu morao da trazim od kernela memoriju, vec da mogu sl put da segmentiram
+			if((i=memadd(nsegments*5))==NULL)
+				return NULL;
+		}
+		//Ako nije nasao u ovom ciklusu odgovarajucu memoriju mozda je nadje u sledecem pa ne radim nista
+	}
 }
 
 //MFree se isto koristi ako je vec poznata lista i pokusava da oslobodi blok na adresi
 void MFree(void *buffer)
 {
 	printf("Free\n");
+	//Pre svega proverim dal je prosledjena adresa u okviru moguce memorije heapa
+	//Ako nije vratim fprintf na stderr 2
+	//Ako jeste =>
+	//Prosledjena adresa je adresa podataka nakon headera
+	//Znaci da je header (buffer-1) adresa
+	//U njemu podesim posl bit na 0
+	//Treba da prodjem kroz listu da bih nasao mesto gde cu ubaciti blok, ili uvek samo da dodam na kraj?
+	//Iako je inUse bio, on pokazuje na neki blok, ovo mi olaksava dosta
+	//Mogu samo da proverim dal je sledeci blok free ili inuse i da ga spojim sa ovim
+	//Inace da imam samo listu free blokova, nisam siguran dal je bitno gde bih ga stavio
+	//Kako mozes da poredis pointere, njihove adrese koje cuvaju? 
+	//Taj blok koji vracam u listu je neka adresa u memoriji
+	//Najefikasnije bi bilo da pointer koji cuva neku adresu u listi, bude na poziciji posle manjih adresa a pre vecih adresa od sebe
+	//Dodam u fbp pointer na dodat blok
+	//fbp je isto sto i lbp, a i pi na kraju krajeva
 	return;
 }
 
@@ -98,16 +139,18 @@ void MFree(void *buffer)
 void PrintMmallocFreeList()
 {
 	printf("yessir\n");
+	//For petljom prelistaj sve blokove
+	//Iscrtaj trenutnu memoriju kao u gdb mozda
 	return;
 }
 
-void *memadd(size_t size)
+Header *memadd(size_t size)
 {
-	char  *addr;
-	
+	//Zatrazi od kernela jos memorije
+	//Pa free-uj (addr+1) pointer, da bi se dodao u fbp listu i napravio odg header
 	printf("Uspela alokacija? o.o\n");
 
-	return addr;
+	return (Header *) NULL;
 }
 
 //Extract Least Significant Bit

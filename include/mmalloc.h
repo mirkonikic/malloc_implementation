@@ -23,7 +23,7 @@ union header
 		//pa moze da se koristi za cuvanje informacije dal je free ili inuse
 		uint size;	
 		union header *next_blck;
-	};
+	} s;
 	long int x;
 };
 
@@ -35,6 +35,6 @@ void MFree(void *buffer);
 void PrintMmallocFreeList();
 
 int uorf(uint size);
-void *memadd(size_t size);
+Header *memadd(size_t size);
 
 #endif /* M_MALLOC_H */
