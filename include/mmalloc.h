@@ -5,7 +5,8 @@
 #ifndef M_MALLOC_H
 #define M_MALLOC_H
 
-#define MAX_MALLOC_SIZE (1024*1024*16)
+#define MAX_MALLOC_SIZE (1024*1024*16) //16MB heap
+#define MALLOC_CHUNK_REQUEST (1024) //16KB should be large enough
 
 //instead of using Struct only, with union i can ensure alignment to 16B with long
 typedef unsigned int uint;
@@ -34,6 +35,7 @@ void *Mmalloc(size_t size);
 void MFree(void *buffer);
 void PrintMmallocFreeList();
 
+int retsize(uint size);
 int uorf(uint size);
 Header *memadd(size_t size);
 

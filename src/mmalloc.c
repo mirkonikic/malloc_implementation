@@ -106,8 +106,11 @@ void *Mmalloc(size_t size)
 			//Ceo Loop je prosao
 			printf("Presao sam ceo loop, nisam nasao odg blok..\n");
 			//Trazim od kernela 5*zeljeni blok da ne bih pri svakom malloc pozivu morao da trazim od kernela memoriju, vec da mogu sl put da segmentiram
-			if((i=memadd(nsegments*5))==NULL)
+			//postavljam i na fbp koji je vracen iz zahteva za memadd, u sl ciklusu ce biti segmentiran i popravljen header
+			//samo sam morao u free() da se pobrinem da se doda chunk na listu
+			if((i=memadd((nsegments*sizeof(Header)>=MALLOC_CHUNK_REQUEST)?nsegments*sizeof(Header):MALLOC_CHUNK_REQUEST))==NULL)
 				return NULL;
+			return NULL;
 		}
 		//Ako nije nasao u ovom ciklusu odgovarajucu memoriju mozda je nadje u sledecem pa ne radim nista
 	}
@@ -116,22 +119,75 @@ void *Mmalloc(size_t size)
 //MFree se isto koristi ako je vec poznata lista i pokusava da oslobodi blok na adresi
 void MFree(void *buffer)
 {
-	printf("Free\n");
-	//Pre svega proverim dal je prosledjena adresa u okviru moguce memorije heapa
-	//Ako nije vratim fprintf na stderr 2
-	//Ako jeste =>
-	//Prosledjena adresa je adresa podataka nakon headera
-	//Znaci da je header (buffer-1) adresa
-	//U njemu podesim posl bit na 0
-	//Treba da prodjem kroz listu da bih nasao mesto gde cu ubaciti blok, ili uvek samo da dodam na kraj?
-	//Iako je inUse bio, on pokazuje na neki blok, ovo mi olaksava dosta
-	//Mogu samo da proverim dal je sledeci blok free ili inuse i da ga spojim sa ovim
-	//Inace da imam samo listu free blokova, nisam siguran dal je bitno gde bih ga stavio
-	//Kako mozes da poredis pointere, njihove adrese koje cuvaju? 
-	//Taj blok koji vracam u listu je neka adresa u memoriji
-	//Najefikasnije bi bilo da pointer koji cuva neku adresu u listi, bude na poziciji posle manjih adresa a pre vecih adresa od sebe
-	//Dodam u fbp pointer na dodat blok
-	//fbp je isto sto i lbp, a i pi na kraju krajeva
+	Header *hp = (Header *)buffer-1, *i;
+	
+	//printf info about allocation/free-ing
+	printf("Freepointer: %p\n", buffer);
+	printf("Header:      %p\n", buffer-1);
+	printf("\tHeader size: %d\n", hp->s.size);
+        printf("Address lbp: %p\n", lbp);
+       	printf("Address fbp: %p\n", fbp);
+	
+	//Prvo proveris za errors i da li je in use ovaj block
+	//i nadjes odgovarajuci blok za allocation
+	//zapocnes sa i=fbp i onda ides jedan po jedan dok ne nadjes odg
+	//ako je i->s.next_blck == lbp, onda dodas samo na kraj
+	//trazim da stane ako je hp adresa > od i a manja od i->s.next_blck
+	//ili ako je sledeci pointer lbp sto znaci da je manja od base pointera ili veca od kraja liste
+	//znaci ako je hp<lbp ili i->s.next_blck == lbp && hp>i
+	
+	//stop if following conditions are met
+	//between two blocks:	(hp>i && hp<i->s.next_blck) 
+	//greater than the end:	(i>i->s.next_blck && hp>i)
+	//less than the base:	(i>i->s.next_blck && hp<i->s.next_blck)
+	for(i = fbp; !(hp>i&&hp<i->s.next_blck)||!(i>i->s.next_blck&&hp>i)||!(i>i->s.next_blck&&hp<i->s.next_blck); i=i->s.next_blck)
+		if(i->s.next_blck==i)
+			break;
+	
+	printf("!!!CONDITION IS MET\n");
+	printf("address of current pointer: 	%p\n", i);
+	printf("address of next pointer: 	%p\n", i->s.next_blck);
+	printf("address of fbp pointer: 	%p\n", fbp);
+	printf("address of lbp pointer: 	%p\n", lbp);
+	printf("address of header pointer: 	%p\n", hp);
+	
+	//now im not sure which condition made for loop break but,
+	//in either way i should implement next few lines
+	//hp->s.next_blck = i->s.next_blck
+	//i->s.next_blck = hp
+	
+	//check if adjacent blocks are also free
+	//	check if i is free
+	//		set i size to theirs combined and set i to point to hp->s.next_blck
+	//	check if next block is free //hp+hp->s.size==i->s.next_blck
+	//		set the size to be combined and set hp to point to next block
+	//or if it points to itself, than dont
+	//	set hp to point to i->s.next_blck
+	//	set i to point to hp
+	
+	if(i->s.next_blck==i){
+		hp->s.next_blck = i->s.next_blck;
+		i->s.next_blck = hp;
+		fbp = i;
+		printf("sbrk-ed memory to address: %p, pointing from fbp: %p, and pointer addres is: %p\nand hp pointing to: %p\n", hp, fbp, fbp->s.next_blck, hp->s.next_blck);
+		return;
+	}
+	//check if i pointer is free and adjacent to hp
+	//after knowing its not pointing to itself
+	if(uorf(i->s.size)==0 && i + i->s.size == hp)
+	{
+		i->s.size += hp->s.size;	//combine the sizes
+		i->s.next_blck = hp->s.next_blck;	//set next of i to be next of hp
+	}
+	//check if i->s.next_blck is free and adjacent to hp 
+	if(uorf(i->s.size)==0 && hp + hp->s.size == i->s.next_blck)
+	{
+		hp->s.size += i->s.next_blck->s.size;
+		hp->s.next_blck = i->s.next_blck->s.next_blck;
+	}			
+	
+	
+
 	return;
 }
 
@@ -148,11 +204,35 @@ Header *memadd(size_t size)
 {
 	//Zatrazi od kernela jos memorije
 	//Pa free-uj (addr+1) pointer, da bi se dodao u fbp listu i napravio odg header
-	printf("Uspela alokacija? o.o\n");
+	printf("Zatrazeno je %ldB\n", size*sizeof(Header));
+	
+	char *cp, *np;	//current pointer and next pointer after request for memory segment
+	Header *hp;	//header pointer
 
-	return (Header *) NULL;
+	cp = sbrk(0);
+	np = sbrk(size*sizeof(Header));
+	
+	printf("current heap address: %p\n", cp);
+	printf("after heap pointer:   %p\n", np);
+	printf("free block pointer:   %p\n", np+1);
+	if(np == (char *)-1)
+		return NULL;
+
+	//by calling sbrk, i get additional 'size_t size' bytes to use, on past program break
+	//but the current break is moved down the memory by the 'size_t size' bytes
+	
+	//creating header at the beginning of the block
+	hp = (Header *)np;	//store address of pointer returned by sbrk to header pointer
+	hp->s.size = size;	//set first block to size parameter
+
+	printf("hp: %p, %d\n", hp, hp->s.size);
+
+	MFree((void *)(hp+1));	//send first address after hp to free, so that free() knows hp-1 is a header, which will shift down 16B
+	printf("Returned to memadd :D\n");
+	return fbp;
 }
 
 //Extract Least Significant Bit
+//void prntaddr(void *addr){return;}
 int retsize(uint size){return size & -2;} 	//and sa 1111...1100, pa se izbegne posl bit
 int uorf(uint size){return size & 0x00000001;}	//and sa 0000...0001, pa se extract posl bit
