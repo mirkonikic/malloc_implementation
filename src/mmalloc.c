@@ -85,15 +85,27 @@ void *Mmalloc(size_t size)
 	//Olaksam procesoru broj instrukcija
 	for(i = pi->s.next_blck ; ; pi = i, i = i->s.next_blck)
 	{
-		if(i->s.size >= nsegments)
+		if(i->s.size >= nsegments && uorf(i->s.size) == 0)	//check if it is bigger than requested chunk and if it is free
 		{
 			printf("Nasao sam blok velicine >= %d: %d, %s, %p\n", nsegments, i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
-			//Zelim da vidim samo dal radi na pocetku
-			//Ostatak koda se odnosi na dodeljivanje memorije korisniku
-			//Prepravljanje headera
-			//I promene InUse ili Free Bita
+			if(i->s.size == nsegments)	//if the size is exact
+			{
+				printf("size of i:%d, uorf(i):%s\n", i->s.size, uorf(i->s.size)==1?"InUse":"Free");
+				i->s.size |= 0x01;	//set lsb to 1 (used)
+				printf("size of i:%d, uorf(i):%s\n", i->s.size, uorf(i->s.size)==1?"InUse":"Free");
+				return i+1;
+			}
+			
+			//else if the size is greater than needed
+			//we gotta segment it!
+			//first change header size
+			//h->s.size -= chunk;
+			//than we set hp to point to chunk
+			//than we make header at chunk address that hp is pointing to
+			//than we set the size and the used bit to 1
+			//lastly we return chunk+1 address
 		}
-		else
+		else	//else print out what you found
 		{	
 			printf("Nasao sam blok velicine < %d: %d, %s, %p\n", nsegments, i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
 		}
@@ -108,9 +120,9 @@ void *Mmalloc(size_t size)
 			//Trazim od kernela 5*zeljeni blok da ne bih pri svakom malloc pozivu morao da trazim od kernela memoriju, vec da mogu sl put da segmentiram
 			//postavljam i na fbp koji je vracen iz zahteva za memadd, u sl ciklusu ce biti segmentiran i popravljen header
 			//samo sam morao u free() da se pobrinem da se doda chunk na listu
-			if((i=memadd((nsegments*sizeof(Header)>=MALLOC_CHUNK_REQUEST)?nsegments*sizeof(Header):MALLOC_CHUNK_REQUEST))==NULL)
+			//if((i=memadd((nsegments*sizeof(Header)>=MALLOC_CHUNK_REQUEST)?nsegments:MALLOC_CHUNK_REQUEST))==NULL)
+			if((i=memadd(nsegments))==NULL)
 				return NULL;
-			return NULL;
 		}
 		//Ako nije nasao u ovom ciklusu odgovarajucu memoriju mozda je nadje u sledecem pa ne radim nista
 	}
@@ -184,9 +196,7 @@ void MFree(void *buffer)
 	{
 		hp->s.size += i->s.next_blck->s.size;
 		hp->s.next_blck = i->s.next_blck->s.next_blck;
-	}			
-	
-	
+	}				
 
 	return;
 }
