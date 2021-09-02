@@ -43,7 +43,6 @@ void *Mmalloc(size_t size)
 		lbp->s.size=0;			//Set values for base header of the list
 	}
 
-//-check if the block is free
 	//loop trough all blocks
 	for(i = pi->s.next_blck ; ; pi = i, i = i->s.next_blck)
 	{
@@ -88,7 +87,7 @@ void *Mmalloc(size_t size)
 				return np+1;
 			}
 		}
-		else
+		else	//if block size is too small or the block is in use
 		{	
 			printf("2.b < size: %d, is %s, and points to: %p\n", i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
 		}
@@ -161,10 +160,11 @@ Header *memadd(size_t size)
         //between two blocks:   (hp>i && hp<i->s.next_blck) 
         //greater than the end: (i>i->s.next_blck && hp>i)
         //less than the base:   (i>i->s.next_blck && hp<i->s.next_blck)
-        for(i = fbp; !(hp>i&&hp<i->s.next_blck)||!(i>i->s.next_blck&&hp>i)||!(i>i->s.next_blck&&hp<i->s.next_blck); i=i->s.next_blck)
+//Check the loop conditions, test3 and test4 break here...
+	for(i = fbp; !(hp>i&&hp<i->s.next_blck)||!(i>i->s.next_blck&&hp>i)||!(i>i->s.next_blck&&hp<i->s.next_blck); i=i->s.next_blck)
                 if(i->s.next_blck==i)
                         break;
-
+	
         printf("5.b found a block: \n");
         printf("\t i address:     %p\n", i);
 	printf("\t points to:     %p\n", i->s.next_blck);
@@ -181,7 +181,7 @@ Header *memadd(size_t size)
 	
         printf("5.c finished memadd: \n");
         printf("\t i address:     %p\n", i);
-	printf("\t points to:	  %p\n", i->s.next_blck);
+	printf("\t points to:     %p\n", i->s.next_blck);
         printf("\t h address:     %p\n", hp);
 	printf("\t points to:     %p\n", hp->s.next_blck);
 	printf("\t size in d:     %d\n", hp->s.size);
