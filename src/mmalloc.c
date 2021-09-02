@@ -131,7 +131,7 @@ void *Mmalloc(size_t size)
 //MFree se isto koristi ako je vec poznata lista i pokusava da oslobodi blok na adresi
 void MFree(void *buffer)
 {
-	Header *hp = (Header *)buffer-1, *i;
+	Header *hp = (Header *)buffer-1;
 	
 	//printf info about allocation/free-ing
 	printf("Freepointer: %p\n", buffer);
@@ -148,55 +148,11 @@ void MFree(void *buffer)
 	//ili ako je sledeci pointer lbp sto znaci da je manja od base pointera ili veca od kraja liste
 	//znaci ako je hp<lbp ili i->s.next_blck == lbp && hp>i
 	
-	//stop if following conditions are met
-	//between two blocks:	(hp>i && hp<i->s.next_blck) 
-	//greater than the end:	(i>i->s.next_blck && hp>i)
-	//less than the base:	(i>i->s.next_blck && hp<i->s.next_blck)
-	for(i = fbp; !(hp>i&&hp<i->s.next_blck)||!(i>i->s.next_blck&&hp>i)||!(i>i->s.next_blck&&hp<i->s.next_blck); i=i->s.next_blck)
-		if(i->s.next_blck==i)
-			break;
-	
-	printf("!!!CONDITION IS MET\n");
-	printf("address of current pointer: 	%p\n", i);
-	printf("address of next pointer: 	%p\n", i->s.next_blck);
-	printf("address of fbp pointer: 	%p\n", fbp);
-	printf("address of lbp pointer: 	%p\n", lbp);
-	printf("address of header pointer: 	%p\n", hp);
-	
-	//now im not sure which condition made for loop break but,
-	//in either way i should implement next few lines
-	//hp->s.next_blck = i->s.next_blck
-	//i->s.next_blck = hp
-	
-	//check if adjacent blocks are also free
-	//	check if i is free
-	//		set i size to theirs combined and set i to point to hp->s.next_blck
-	//	check if next block is free //hp+hp->s.size==i->s.next_blck
-	//		set the size to be combined and set hp to point to next block
-	//or if it points to itself, than dont
-	//	set hp to point to i->s.next_blck
-	//	set i to point to hp
-	
-	if(i->s.next_blck==i){
-		hp->s.next_blck = i->s.next_blck;
-		i->s.next_blck = hp;
-		fbp = i;
-		printf("sbrk-ed memory to address: %p, pointing from fbp: %p, and pointer addres is: %p\nand hp pointing to: %p\n", hp, fbp, fbp->s.next_blck, hp->s.next_blck);
-		return;
-	}
-	//check if i pointer is free and adjacent to hp
-	//after knowing its not pointing to itself
-	if(uorf(i->s.size)==0 && i + i->s.size == hp)
-	{
-		i->s.size += hp->s.size;	//combine the sizes
-		i->s.next_blck = hp->s.next_blck;	//set next of i to be next of hp
-	}
-	//check if i->s.next_blck is free and adjacent to hp 
-	if(uorf(i->s.size)==0 && hp + hp->s.size == i->s.next_blck)
-	{
-		hp->s.size += i->s.next_blck->s.size;
-		hp->s.next_blck = i->s.next_blck->s.next_blck;
-	}				
+	//Ako su u free, znaci da je blok vec u listi i samo treba da bude ociscen
+	printf("uorf blok: %d\n", uorf(hp->s.size));
+	hp->s.size &= ~(0x01);	//00000001 -> ~ znak je komplement -> 11111110 i kad sa tim and-ujes
+	//postavi se poslednji bit na 0
+	printf("uorf blok: %d\n", uorf(hp->s.size));
 
 	return;
 }
@@ -217,7 +173,7 @@ Header *memadd(size_t size)
 	printf("Zatrazeno je %ldB\n", size*sizeof(Header));
 	
 	char *cp, *np;	//current pointer and next pointer after request for memory segment
-	Header *hp;	//header pointer
+	Header *hp, *i;	//header pointer
 
 	cp = sbrk(0);
 	np = sbrk(size*sizeof(Header));
@@ -237,7 +193,80 @@ Header *memadd(size_t size)
 
 	printf("hp: %p, %d\n", hp, hp->s.size);
 
-	MFree((void *)(hp+1));	//send first address after hp to free, so that free() knows hp-1 is a header, which will shift down 16B
+	//MFree((void *)(hp+1));	//send first address after hp to free, so that free() knows hp-1 is a header, which will shift down 16B
+	
+
+
+
+
+
+
+	//stop if following conditions are met
+        //between two blocks:   (hp>i && hp<i->s.next_blck) 
+        //greater than the end: (i>i->s.next_blck && hp>i)
+        //less than the base:   (i>i->s.next_blck && hp<i->s.next_blck)
+        for(i = fbp; !(hp>i&&hp<i->s.next_blck)&&!(i>i->s.next_blck&&hp>i)&&!(i>i->s.next_blck&&hp<i->s.next_blck); i=i->s.next_blck)
+                if(i->s.next_blck==i)
+                        break;
+
+        printf("!!!CONDITION IS MET\n");
+        printf("address of current pointer:     %p\n", i);
+        printf("address of next pointer:        %p\n", i->s.next_blck);
+        printf("address of fbp pointer:         %p\n", fbp);
+        printf("address of lbp pointer:         %p\n", lbp);
+        printf("address of header pointer:      %p\n", hp);
+
+        //now im not sure which condition made for loop break but,
+        //in either way i should implement next few lines
+        //hp->s.next_blck = i->s.next_blck
+        //i->s.next_blck = hp
+
+        //check if adjacent blocks are also free
+        //      check if i is free
+        //              set i size to theirs combined and set i to point to hp->s.next_blck
+        //      check if next block is free //hp+hp->s.size==i->s.next_blck
+        //              set the size to be combined and set hp to point to next block
+        //or if it points to itself, than dont
+        //      set hp to point to i->s.next_blck
+        //      set i to point to hp
+
+        if(i->s.next_blck==i){
+                hp->s.next_blck = i->s.next_blck;
+                i->s.next_blck = hp;
+                fbp = i;
+                printf("sbrk-ed memory to address: %p, pointing from fbp: %p, and pointer addres is: %p\nand hp pointing to: %p\n", hp, fbp, fbp->s.next_blck, hp->s.next_blck);
+                return fbp;
+        }
+        //check if i pointer is free and adjacent to hp
+        //after knowing its not pointing to itself
+        //Ovo se koristi samo kad treba da dodam nov blok u listu
+        //Posto imam implicitnu listu vec su svi povezani, pa ne moram da ih prevezujem
+        if(uorf(i->s.size)==0 && i + i->s.size == hp)
+        {
+                i->s.size += hp->s.size;        //combine the sizes
+                i->s.next_blck = hp->s.next_blck;       //set next of i to be next of hp
+        }
+        //check if i->s.next_blck is free and adjacent to hp 
+        if(uorf(i->s.size)==0 && hp + hp->s.size == i->s.next_blck)
+        {
+                hp->s.size += i->s.next_blck->s.size;
+                hp->s.next_blck = i->s.next_blck->s.next_blck;
+        }
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+	
 	printf("Returned to memadd :D\n");
 	return fbp;
 }

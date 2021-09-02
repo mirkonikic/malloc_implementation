@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
 	InitMmalloc();
 
 	array = Mmalloc(10);
+	
 	if(array == NULL)
 	{
 		fprintf(stderr,"call to Mmalloc() failed\n");
@@ -27,7 +28,7 @@ int main(int argc, char *argv[])
 		array[i] = 'a' + i;
 	}
 	array[9] = 0;
-
+	
 	printf("here is my nifty new string: %s\n",array);
 
 	MFree(array);
