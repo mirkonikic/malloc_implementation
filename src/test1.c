@@ -8,13 +8,14 @@ int main(int argc, char *argv[])
 {
 	char *array;
 	int i;
-
+	int s = argc>1?atoi(argv[1]):10;
+	
 	/*
 	 * must be first call in the program
 	 */
 	InitMmalloc();
 
-	array = Mmalloc(10);
+	array = Mmalloc(s);
 	
 	if(array == NULL)
 	{
