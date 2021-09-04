@@ -19,11 +19,11 @@ static Header *fbp = NULL;	//Free Block Pointer
 
 void InitMmalloc()
 {
-	printf("	MMALLOC		\n");
-	printf("		by mirko\n");
-	printf("		        \n");
-	printf("sizeof(int): %ld\n", sizeof(int));
-	printf("sizeof(Header): %ld\n", sizeof(Header));
+	//printf("	MMALLOC		\n");
+	//printf("		by mirko\n");
+	//printf("		        \n");
+	//printf("sizeof(int): %ld\n", sizeof(int));
+	//printf("sizeof(Header): %ld\n", sizeof(Header));
 	return;
 }
 
@@ -34,7 +34,7 @@ void *Mmalloc(size_t size)
 	uint nsegments;	//Size of headers, since one block is the size of header
 	
 	nsegments = (size+sizeof(Header)-1)/sizeof(Header) + 1;
-	printf("0. number of segments needed: %d for %ld bytes\n", nsegments, size);
+	//printf("0. number of segments needed: %d for %ld bytes\n", nsegments, size);
 
 	//Check if there is no list
 	if((pi=fbp)==NULL)
@@ -49,20 +49,20 @@ void *Mmalloc(size_t size)
 		//Check if the block is bigger or equal to the requested size
 		if(i->s.size/sizeof(Header) >= nsegments && uorf(i->s.size) == 0)
 		{
-			printf("2.a >= size: %d, is %s, and points to: %p\n", i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
+			//printf("2.a >= size: %d, is %s, and points to: %p\n", i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
 			if(i->s.size/sizeof(Header) == nsegments)	//if the size is exact
 			{
-				printf("3.a = setting uorf of the block: %s, %d\n", uorf(i->s.size)==1?"InUse":"Free", i->s.size);
+				//printf("3.a = setting uorf of the block: %s, %d\n", uorf(i->s.size)==1?"InUse":"Free", i->s.size);
 				i->s.size |= 0x01;	//set lsb to 1 (used)
-				printf("3.b = set uorf of the block    : %s, %d\n", uorf(i->s.size)==1?"InUse":"Free", i->s.size);
+				//printf("3.b = set uorf of the block    : %s, %d\n", uorf(i->s.size)==1?"InUse":"Free", i->s.size);
 				return i+1;
 			}
 			else	//or if the size is larger than requested
 			{
 				//segment it from the end
-				printf("4.a before segmentation: \n");
-				printf("\tsize of i: %d\n", i->s.size);
-				printf("\tpoints to: %p\n", i->s.next_blck);
+				//printf("4.a before segmentation: \n");
+				//printf("\tsize of i: %d\n", i->s.size);
+				//printf("\tpoints to: %p\n", i->s.next_blck);
 
 				Header *np = (Header *)i+nsegments;
 				np->s.size = nsegments*sizeof(Header);
@@ -71,17 +71,17 @@ void *Mmalloc(size_t size)
 				i->s.size -= nsegments*sizeof(Header);
 				i->s.next_blck = np;
 
-				printf("4.b after segmentation: \n");
-				printf("\tsize of i:	%d\n", i->s.size);
-				printf("\tpoints to:	%p\n", i->s.next_blck);
-				printf("\tsize of h:	%d\n", np->s.size);
-				printf("\tpoints to:	%p\n", np->s.next_blck);
-				printf("\taddress  :	%p\n", np);
+				//printf("4.b after segmentation: \n");
+				//printf("\tsize of i:	%d\n", i->s.size);
+				//printf("\tpoints to:	%p\n", i->s.next_blck);
+				//printf("\tsize of h:	%d\n", np->s.size);
+				//printf("\tpoints to:	%p\n", np->s.next_blck);
+				//printf("\taddress  :	%p\n", np);
 
 				//set the uorf
-				printf("3.a = setting uorf of the block: %s\n", uorf(np->s.size)==1?"InUse":"Free");
+				//printf("3.a = setting uorf of the block: %s\n", uorf(np->s.size)==1?"InUse":"Free");
 				np->s.size |= 0x01;
-				printf("3.b = set uorf of the block    : %s\n", uorf(np->s.size)==1?"InUse":"Free");
+				//printf("3.b = set uorf of the block    : %s\n", uorf(np->s.size)==1?"InUse":"Free");
 		
 				//return i+1
 				return np+1;
@@ -89,7 +89,7 @@ void *Mmalloc(size_t size)
 		}
 		else	//if block size is too small or the block is in use
 		{	
-			printf("2.b < size: %d, is %s, and points to: %p\n", i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
+			//printf("2.b < size: %d, is %s, and points to: %p\n", i->s.size, uorf(i->s.size)==1?"InUse":"Free", i->s.next_blck);
 		}
 		
 		//Either made a full circle or just began
@@ -105,26 +105,35 @@ void *Mmalloc(size_t size)
 //Used for freeing the allocated memory
 void MFree(void *buffer)
 {
-	Header *hp = (Header *)buffer-1;
+	Header *hp = (Header *)buffer-1, *i;
 	
-	printf("6.a free is called: %s\n", uorf(hp->s.size)==1?"InUse":"Free");
+	//printf("6.a free is called: %s\n", uorf(hp->s.size)==1?"InUse":"Free");
 	hp->s.size &= ~(0x01);	//00000001 -> ~ znak je komplement -> 11111110 i kad sa tim and-ujes
-	printf("6.b free is exectd: %s\n", uorf(hp->s.size)==1?"InUse":"Free");
+	//printf("6.b free is exectd: %s\n", uorf(hp->s.size)==1?"InUse":"Free");
 	
-//-Coalescing, check if next and adjacent blocks are free and merge them together
-	/*
+	for(i=fbp; ;i=i->s.next_blck)
+		if(i->s.next_blck == hp)
+			break;
+	//printf("found i: %p, points to: i->s.next_blck: %p, hp: %p\n", i, i->s.next_blck, hp);
+	//printf("i: %d, hp: %d\n", uorf(i->s.size), uorf(hp->s.size));
+	//printf("i: %d, hp: %d\n", i->s.size, hp->s.size);
+	//printf("i+size: %p == hp: %p\n", i+i->s.size, hp);
+
 	if(uorf(i->s.size)==0 && i + i->s.size == hp)
         {
+		printf("coalesing1");
                 i->s.size += hp->s.size;        //combine the sizes
                 i->s.next_blck = hp->s.next_blck;       //set next of i to be next of hp
         }
         //check if i->s.next_blck is free and adjacent to hp 
         if(uorf(i->s.size)==0 && hp + hp->s.size == i->s.next_blck)
         {
+		printf("coalesing2");
                 hp->s.size += i->s.next_blck->s.size;
                 hp->s.next_blck = i->s.next_blck->s.next_blck;
         }
-	*/
+	
+
 	return;
 }
 
@@ -141,7 +150,7 @@ void PrintMmallocFreeList()
 
 Header *memadd(size_t size)
 {
-	printf("5.a memory is needed from kernel: %ldB\n", size*sizeof(Header));
+	//printf("5.a memory is needed from kernel: %ldB\n", size*sizeof(Header));
 	
 	char *np;	//current pointer and next pointer after request for memory segment
 	Header *hp, *i;	//header pointer
@@ -160,33 +169,32 @@ Header *memadd(size_t size)
         //between two blocks:   (hp>i && hp<i->s.next_blck) 
         //greater than the end: (i>i->s.next_blck && hp>i)
         //less than the base:   (i>i->s.next_blck && hp<i->s.next_blck)
-//Check the loop conditions, test3 and test4 break here...
-	for(i = fbp; !(hp>i&&hp<i->s.next_blck)||!(i>i->s.next_blck&&hp>i)||!(i>i->s.next_blck&&hp<i->s.next_blck); i=i->s.next_blck)
-                if(i->s.next_blck==i)
-                        break;
-	
-        printf("5.b found a block: \n");
-        printf("\t i address:     %p\n", i);
-	printf("\t points to:     %p\n", i->s.next_blck);
-        printf("\t n address:     %p\n", np);
-        printf("\t fbp addrs:     %p\n", fbp);
-        printf("\t lbp addrs:     %p\n", lbp);
-        printf("\t hp addrss:     %p\n", hp);
-	printf("\t size in d:     %d\n", hp->s.size);
+	for(i = fbp; !(hp>i&&hp<i->s.next_blck)&&!(i>i->s.next_blck&&hp>i)&&!(i>i->s.next_blck&&hp<i->s.next_blck); i=i->s.next_blck)
+		if(i->s.next_blck==i)
+               		break; 
+
+        //printf("5.b found a block: \n");
+        //printf("\t i address:     %p\n", i);
+	//printf("\t points to:     %p\n", i->s.next_blck);
+        //printf("\t n address:     %p\n", np);
+        //printf("\t fbp addrs:     %p\n", fbp);
+        //printf("\t lbp addrs:     %p\n", lbp);
+        //printf("\t hp addrss:     %p\n", hp);
+	//printf("\t size in d:     %d\n", hp->s.size);
 
         //Check if i is only element of the list
 	hp->s.next_blck = i->s.next_blck;
         i->s.next_blck = hp;
         fbp = i;
 	
-        printf("5.c finished memadd: \n");
-        printf("\t i address:     %p\n", i);
-	printf("\t points to:     %p\n", i->s.next_blck);
-        printf("\t h address:     %p\n", hp);
-	printf("\t points to:     %p\n", hp->s.next_blck);
-	printf("\t size in d:     %d\n", hp->s.size);
-        printf("\t fbp addrs:     %p\n", fbp);
-        printf("\t lbp addrs:     %p\n", lbp);
+        //printf("5.c finished memadd: \n");
+        //printf("\t i address:     %p\n", i);
+	//printf("\t points to:     %p\n", i->s.next_blck);
+        //printf("\t h address:     %p\n", hp);
+	//printf("\t points to:     %p\n", hp->s.next_blck);
+	//printf("\t size in d:     %d\n", hp->s.size);
+        //printf("\t fbp addrs:     %p\n", fbp);
+        //printf("\t lbp addrs:     %p\n", lbp);
 
         return fbp;
 }
