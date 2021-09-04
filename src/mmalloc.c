@@ -19,11 +19,11 @@ static Header *fbp = NULL;	//Free Block Pointer
 
 void InitMmalloc()
 {
-	//printf("	MMALLOC		\n");
-	//printf("		by mirko\n");
-	//printf("		        \n");
-	//printf("sizeof(int): %ld\n", sizeof(int));
-	//printf("sizeof(Header): %ld\n", sizeof(Header));
+	printf("	MMALLOC		\n");
+	printf("		by mirko\n");
+	printf("		        \n");
+	printf("sizeof(int): %ld\n", sizeof(int));
+	printf("sizeof(Header): %ld\n\n", sizeof(Header));
 	return;
 }
 
