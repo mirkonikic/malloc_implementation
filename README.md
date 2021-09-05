@@ -1,4 +1,4 @@
-# malloc_implementation
+# mmalloc(size_t size)
 Memory management project, malloc heap implementation
 
 todo:<br>
