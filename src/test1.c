@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
 	}
 	array[9] = 0;
 	
+	PrintMmallocFreeList();
 	printf("here is my nifty new string: %s\n",array);
 
 	MFree(array);

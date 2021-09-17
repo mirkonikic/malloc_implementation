@@ -64,11 +64,14 @@ void *Mmalloc(size_t size)
 				//printf("\tsize of i: %d\n", i->s.size);
 				//printf("\tpoints to: %p\n", i->s.next_blck);
 
-				Header *np = (Header *)i+nsegments;
+				i->s.size &= -2;	//set big block free
+				printf("%d \n", i->s.size);
+				i->s.size -= (nsegments+1)*sizeof(Header);
+				printf("%d \n", i->s.size);
+
+				Header *np = i+(i->s.size/16);
 				np->s.size = nsegments*sizeof(Header);
 				np->s.next_blck = i->s.next_blck;
-
-				i->s.size -= nsegments*sizeof(Header);
 				i->s.next_blck = np;
 
 				//printf("4.b after segmentation: \n");
@@ -80,9 +83,11 @@ void *Mmalloc(size_t size)
 
 				//set the uorf
 				//printf("3.a = setting uorf of the block: %s\n", uorf(np->s.size)==1?"InUse":"Free");
+				//printf("3.ab = setting uorf of the block: %s\n", uorf(i->s.size)==1?"InUse":"Free");
 				np->s.size |= 0x01;
-				//printf("3.b = set uorf of the block    : %s\n", uorf(np->s.size)==1?"InUse":"Free");
-		
+				//printf("3.b = set uorf of the block    : %s\n", uorf(np->s.size)==1?"InUse":"Free");	
+				//printf("3.bb = set uorf of the block    : %s\n", uorf(i->s.size)==1?"InUse":"Free");	
+
 				//return i+1
 				return np+1;
 			}
@@ -141,10 +146,49 @@ void MFree(void *buffer)
 void PrintMmallocFreeList()
 {
 
-//-Logo 
+//-Logo
+	printf("\n\n\t\t   .----.   \n");
+	printf("\t\t   |@>_ |   \n");
+	printf("\t\t __|____|__ \n");
+	printf("\t\t|  ______--|\n");
+	printf("\t\t`-/.::::.\\-'\n");
+	printf("\t\t `--------' \n");
+	printf("\t\t      Malloc implementation by -> mirkonikic\n");
+	printf("\n");	
 //-Iscrtaj listu gde h|i ili h|f predstavlja in_use_header or free_header i pored toga data data data...
-//-Prikazi memoriju kao u gdb-u ->h:0x41414140:f:0x12442123 0x1244223352 0x124241135 ->h:0x11111111:i:0x21313525523 0x14333525313 0x1315315132 ...
+	printf("\n\t[*]Verbose display of mmalloc heap memory:\n");
 
+	Header *pi = lbp, *i;
+	printf("\t[%c] : %dB : %p -> %p\n", uorf(pi->s.size)==1?'u':'f', pi->s.size, pi, pi->s.next_blck);
+        if((pi=fbp)==NULL){printf("\t[*] list is currently empty\n\n");return;}
+	
+	for(i=pi->s.next_blck; i!=lbp; pi=i, i=i->s.next_blck)
+	{
+		//[h]:5123B:0xeff91627 -> 0xeffb7684
+		printf("\t[%c] : %dB : %p -> %p\n", uorf(i->s.size)==1?'u':'f', i->s.size, i, i->s.next_blck);
+		if(uorf(i->s.size)==1 && printf("\t\t %p: ", i)>0){
+			for(int c = 0; c<(i->s.size)/16; c++){
+				char *l = i+c;
+				if(c!=0)	
+					printf("\n\t\t %p: ", i+c);
+				for(int k = 0; k<16; k+=4)
+				{
+					printf("0x%02x%02x%02x%02x ", *(l+c+k), *(l+c+k+1), *(l+c+k+2), *(l+c+k+3));
+				}
+				printf("\t //");
+				for(int k = 0; k<16; k+=4)
+                                {
+					printf("%c%c%c%c ", *(l+c+k), *(l+c+k+1), *(l+c+k+2), *(l+c+k+3));
+                                }
+
+			}
+			printf("\n");
+		}
+		//for za prikaz podataka koji se nalaze unutar segmenta
+	}
+	printf("\n\n");
+//-Prikazi memoriju kao u gdb-u ->h:0x41414140:f:0x12442123 0x1244223352 0x124241135 ->h:0x11111111:i:0x21313525523 0x14333525313 0x1315315132 ...
+	
 	return;
 }
 
