@@ -173,12 +173,13 @@ void PrintMmallocFreeList()
 					printf("\n\t\t %p: ", i+c);
 				for(int k = 0; k<16; k+=4)
 				{
-					printf("0x%02x%02x%02x%02x ", *(l+c+k), *(l+c+k+1), *(l+c+k+2), *(l+c+k+3));
+					printf("0x%02hhx%02hhx%02hhx%02hhx ", *(l+c+k), *(l+c+k+1), *(l+c+k+2), *(l+c+k+3));
+					//printf("%p %p %p %p \n", (l+c+k), (l+c+k+1), (l+c+k+2), (l+c+k+3));
 				}
 				printf("\t //");
 				for(int k = 0; k<16; k+=4)
                                 {
-					printf("%c%c%c%c ", *(l+c+k), *(l+c+k+1), *(l+c+k+2), *(l+c+k+3));
+					printf("%c %c %c %c ", *(l+c+k), *(l+c+k+1), *(l+c+k+2), *(l+c+k+3));
                                 }
 
 			}
