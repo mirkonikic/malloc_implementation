@@ -3,8 +3,7 @@ Memory management project, malloc heap implementation
 
 **Display**
 ---
-![alt text](https://github.com/[username]/[reponame]/blob/[branch]/image.jpg?raw=true)
-![alt text](img/image.jpg)
+![alt text](img/mmalloc.jpg)
 
 
 
