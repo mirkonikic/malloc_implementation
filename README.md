@@ -3,7 +3,8 @@ Memory management project, malloc heap implementation
 
 **Display**
 ---
-![ ] ()
+![alt text](https://github.com/[username]/[reponame]/blob/[branch]/image.jpg?raw=true)
+![alt text](img/image.jpg)
 
 
 
@@ -13,10 +14,13 @@ Memory management project, malloc heap implementation
 ---
 
 ```
-Usage: 
-            mmalloc(size_t size);
-            mfree();
-            
+Usage:      
+Include the library first with:  #include "mmalloc.h"
+After previously mentioned action, you can call following functions respectively:
+            InitMmalloc();
+            void *buffer = Mmalloc(size_t size);
+            MFree(buffer);
+            PrintMmallocFreeList();
 ```
 
 todo:<br>
