@@ -166,7 +166,9 @@ void PrintMmallocFreeList()
 	{
 		//[h]:5123B:0xeff91627 -> 0xeffb7684
 		printf("\t[%c] : %dB : %p -> %p\n", uorf(i->s.size)==1?'u':'f', i->s.size, i, i->s.next_blck);
-		if(uorf(i->s.size)==1 && printf("\t\t %p: ", i)>0){
+//If you want to print contents of heap blocks, remove first condition in following if function
+// upgraded condition: !(0==1) or (0==1) so only the ! sign controls if the following if executes
+		if(!(0 == 1) && uorf(i->s.size)==1 && printf("\t\t %p: ", i)>0){
 			for(int c = 0; c<(i->s.size)/16; c++){
 				char *l = i+c;
 				if(c!=0)	
