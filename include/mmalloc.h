@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 //TODO: implementirati algoritme dlmalloc-a
-//TODO: implementirati druge verzije malloca, jemalloc, ptmalloc... pa je moguce specificirati koji neko zeli
+//TODO: implementirati druge verzije malloca: jemalloc, ptmalloc, dlmalloc, SegmentHeapWindows, NT Heap, kmallocKernelLinux, kallocIOS; pa je moguce specificirati koji neko zeli
 
 #ifndef M_MALLOC_H
 #define M_MALLOC_H
