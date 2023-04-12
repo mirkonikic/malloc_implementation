@@ -35,3 +35,4 @@ todo:<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mmalloc(n, algorithm)<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#define __MMALLOC_BEST_FIT__<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#include "mmalloc_bf_ilt.h"  //mmalloc | best-fit algorithm | implicit-list-type structure<br>
+- [ ] implement jemalloc, ptmalloc, dlmalloc...
